@@ -19,18 +19,21 @@ pair<int,int> findPrior(string& s, int pos, Node* node, int length, int i) {
             
             curr++; pos++; length++;
         }
-        cout << "HI" << cv <<  " " << i << endl;
-        if(cv >= i)
+        
+        cout << cv << " " << length << " " << i << endl;
+        if(cv >= i) {
             return {-1, -1};
+        }
 
-        if(cv + length == i) {
+        if(!(curr == edge->label.size())) {
             return {cv, length};
-        }
-        else if (curr == edge->label.size()) {
-            return findPrior(s, pos, child, length, i);
         } else {
-            return {cv, length};
-        }
+            pair<int, int> maybe = findPrior(s, pos, child, length, i);
+            if(maybe.first != -1 && maybe.second > length)  
+                return maybe;
+            else 
+                return {cv, length};
+        } 
     }
 
     return {-1, -1};
