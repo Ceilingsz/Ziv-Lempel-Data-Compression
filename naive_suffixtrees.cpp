@@ -1,130 +1,123 @@
-#include<iostream>
-#include<vector>
-#include<algorithm>
-using namespace std;
+#include "naive_suffixtrees.hpp"
 
-int t = 0;
-typedef struct Node {
-    vector<struct Edge *> edges;
-    int num;
-} Node;
+// Constructor implementation
+SuffixTree::SuffixTree(string& word) {
+    t1 = 0;
+    t2 = word.size() + 1;
+    root = createSuffixTree(word);
+}
 
-typedef struct Edge {
-    struct Node* parent;
-    struct Node* child;
-    string label;
-} Edge;
+// printTree method
+void SuffixTree::printTree() {
+    _printTree(root);
+}
 
-class SuffixTree {
-public:
-    Node* root;
+// initializeSuffixTree
+Node* SuffixTree::initializeSuffixTree(const string& s){
+    Node* nd = new Node();
+    Edge* newEdge = new Edge();
+    Node* newLeaf = new Node();
+    newEdge->child = newLeaf;
+    newEdge->parent = nd;
+    newEdge->label = s;
+    nd->edges.push_back(newEdge);
 
-    SuffixTree(string& word) {
-        root = Create_Suffix_Tree(word);
+    nd->num = t1++;
+    newLeaf->num = t1++;
+
+    return nd;
+}
+
+// iterationCreateSuffixTree
+void SuffixTree::iterationCreateSuffixTree(int pos, Node * nd, const string& s){
+    if(pos >= s.size()){
+        cout << "Not enough length." << endl;
     }
-    // Function to create the initial tree N_0 (consisting of only one edge)
-    Node* Initialize_Suffix_Tree(const string& s){
-        Node* root = new Node();
-        Edge* newEdge = new Edge();
+
+    Node* curr = nd;
+    bool need = true;
+    for(auto &edge : curr->edges){
+        if(edge->label[0] != s[pos]) continue;
+
+        need = false;
+        bool flag = true;
+        for(int i = 0; pos < s.size() && i < edge->label.size(); i++, pos++){
+            if(s[pos] != edge->label[i]){
+                // must create a new node and put it in between
+
+                Node* newLeaf = new Node();
+                Edge* newEdge1 = new Edge();
+                Edge* newEdge2 = new Edge();
+                Node* newNode = new Node();
+                newEdge1->label = edge->label.substr(i, edge->label.size() - i);
+                newEdge1->parent = newNode; newEdge1->child = edge->child;
+                edge->child = newNode;
+                newEdge2->child = newLeaf; newEdge2->parent = newNode;
+
+                newEdge2->label = s.substr(pos, s.size() - pos);
+                newNode->edges.push_back(newEdge1); newNode->edges.push_back(newEdge2);
+                edge->label = edge->label.substr(0, i);
+                flag = false;
+
+                newLeaf->num = t1++;
+                newNode->num = t2++;
+            }
+        }
+
+        if(flag){
+            // prefix matches
+            iterationCreateSuffixTree(pos, edge->child, s);
+        }
+        break;
+    }
+
+    if(need){
         Node* newLeaf = new Node();
+        Edge* newEdge = new Edge();
         newEdge->child = newLeaf;
-        newEdge->parent = root;
-        newEdge->label = s;
-        root->edges.push_back(newEdge);
+        newEdge->parent = nd;
+        newEdge->label = s.substr(pos, s.size() - pos);
+        nd->edges.push_back(newEdge);
+        newLeaf->num = t1++;
+    }
+}
 
-        root->num = t++;
-        newLeaf->num = t++;
+// _printTree helper
+void SuffixTree::_printTree(Node* node) {
+    if(node == NULL) return;
+    for (auto edge : node->edges) {
+        cout << edge->parent->num << " " << edge->label << " " << edge->child->num << endl;
+    }
+    for(auto edge : node->edges){
+        _printTree(edge->child);
+    }
+}
 
-        return root;
+// createSuffixTree
+Node* SuffixTree::createSuffixTree(string& s){
+    s += '$';
+    Node* root = initializeSuffixTree(s);
+    for(int i = 1; i < s.size() - 1; i++){
+       iterationCreateSuffixTree(i, root, s);
     }
 
-    //Create tree iteratively for each suffix. Function to return tree after each iteration.
-    Node* Iteration_Create_Suffix_Tree(int pos, Node * root, const string& s){
-        if(pos >= s.size()){
-            cout << "Not enough length." << endl;
-            return NULL;
-        }
+    findMin(root);
 
-        Node* curr = root;
-        bool need = true;
-        for(auto &edge : curr->edges){
-            if(edge->label[0] != s[pos])continue;
+    return root;
+}
 
-            need = false;
-            bool flag = true;
-            for(int i = 0; pos < s.size() && i < edge->label.size(); i++, pos++){
-                if(s[pos] != edge->label[i]){
-                    // must create a new node and put it in between
-                
-                    Node* newLeaf = new Node();
-                    Edge* newEdge1 = new Edge();
-                    Edge* newEdge2 = new Edge();
-                    Node* newNode = new Node();
-                    newEdge1->label = edge->label.substr(i, edge->label.size() - i);
-                    newEdge1->parent = newNode; newEdge1->child = edge->child; 
-                    edge->child = newNode; 
-                    newEdge2->child = newLeaf; newEdge2->parent = newNode;
-                    
-                    newEdge2->label = s.substr(pos, s.size() - pos);
-                    newNode->edges.push_back(newEdge1); newNode->edges.push_back(newEdge2); 
-                    edge->label = edge->label.substr(0, i);
-                    flag = false;
+// findMin
+void SuffixTree::findMin(Node* nd) {
+    int res = nd->num;
+    for(auto edge : nd->edges) {
+        auto child = edge->child;
 
-                    newLeaf->num = t++;
-                    newNode->num = t++;
-                    return root;
-                }
-            }
-
-
-            if(flag){
-                // prefix matches
-                root = Iteration_Create_Suffix_Tree(pos, root, s);
-            }
-            break;
-        }
-
-        if(need){
-            Node* newLeaf = new Node();
-            Edge* newEdge = new Edge();
-            newEdge->child = newLeaf;
-            newEdge->parent = root;
-            newEdge->label = s.substr(pos, s.size() - pos);
-            root->edges.push_back(newEdge);
-            newLeaf->num = t++;
-            return root;
-        }
-
-        return root;
-    }
-    void _printTree(Node* node) {
-        if(node == NULL) return;   
-        for (auto edge : node->edges) {
-            cout << edge->parent->num << " " << edge->label << " " << edge->child->num << endl;
-        }
-        for(auto edge : node->edges){
-            _printTree(edge->child);
-        }
+        findMin(child);
+        res = min(res, child->mnSuf);
     }
 
-    void printTree() {
-        _printTree(root);
-    }
+    nd->mnSuf = res;
 
-    Node* Create_Suffix_Tree(string& s){
-        s += '$';
-        Node* root = Initialize_Suffix_Tree(s);
-        for(int i = 1; i < s.size() - 1; i++){
-            root = Iteration_Create_Suffix_Tree(i, root, s);
-        }
-        return root;
-    }
-};
-
-int main() {
-    string s = "";
-    SuffixTree sTree(s);
-    sTree.printTree();
-
-    return 0;
+    if(nd->num == 0)
+        nd->mnSuf = 1;
 }
