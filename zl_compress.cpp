@@ -1,8 +1,51 @@
 #include "naive_suffixtrees.hpp"
+#include "zl_compress.hpp"
 #include <iostream>
 using namespace std;
 
-pair<int,int> findPrior(string& s, int pos, Node* node, int length, int i) {
+
+ZivLempelCompression::ZivLempelCompression(string& s) {
+    give = s;
+    compressedData = compress(give);
+}
+
+string ZivLempelCompression::compress(string& data) {
+        SuffixTree sTree(data);
+        
+        string compressedData = "";
+        for(int i = 0; i < data.size();) {
+            
+            pair<int,int> p = findPrior(data, i, sTree.root, 0, i + 1);
+            if(p.first == -1) {
+                compressedData += data[i];
+                i++;
+            } else {
+                string add = "(" + to_string(p.first) + "," + to_string(p.second) + ")";
+                compressedData += add;
+                i += p.second;
+            }
+        }
+        return compressedData;
+    }
+        
+string ZivLempelCompression::decompress(string& data) {
+    string s = "";
+    for(int i = 0; i < data.size(); i++) {
+        if(data[i] == '(') {
+            string chck = data.substr(i, data.find(')', i) - i + 1);
+            auto [pos, len] = parse(chck);
+            for(int i = 0; i < len; i++) {
+                s += s[pos + i];
+            }
+            i = data.find(')', i);
+        } else {
+            s += data[i];
+        }
+    }
+
+    return s;
+}
+pair<int,int> ZivLempelCompression::findPrior(string& s, int pos, Node* node, int length, int i) {
     for(auto edge : node->edges) {
         if(edge->label[0] != s[pos])continue;
 
@@ -19,8 +62,7 @@ pair<int,int> findPrior(string& s, int pos, Node* node, int length, int i) {
             
             curr++; pos++; length++;
         }
-        
-        cout << cv << " " << length << " " << i << endl;
+
         if(cv >= i) {
             return {-1, -1};
         }
@@ -39,35 +81,17 @@ pair<int,int> findPrior(string& s, int pos, Node* node, int length, int i) {
     return {-1, -1};
 }
 
-string compress(string& data) {
-    SuffixTree sTree(data);
 
-    sTree.printTree();
+pair<int,int> ZivLempelCompression::parse(string& s) {
+    int n = s.size();
+    // s[n - 1] == ')' and s[0] = '('
+    string ints = s.substr(1, n - 2);
+    int p = ints.find(',');
+    
+    int pos = stoi(ints.substr(0, p));
+    int len = stoi(ints.substr(p + 1));
 
-    string compressedData = "";
-    for(int i = 0; i < data.size();) {
-        
-                
-        cout << i << " " << data[i] << endl;
-        pair<int,int> p = findPrior(data, i, sTree.root, 0, i + 1);
-        // cout << p.first << " " << p.second << endl;
-        if(p.first == -1) {
-            compressedData += data[i];
-            i++;
-        } else {
-            string add = "(" + to_string(p.first) + "," + to_string(p.second) + ")";
-            compressedData += add;
-            i += p.second;
-        }
-    }
-
-    return compressedData;
+    return {pos - 1, len};
 }
 
 
-int main(){
-    string data;
-    cin >> data;
-
-    cout << compress(data) << endl;
-}
