@@ -34,11 +34,11 @@ string ZivLempelCompression::decompress(string& data) {
         if(data[i] == '(') {
             string chck = data.substr(i, data.find(')', i) - i + 1);
             auto [pos, len] = parse(chck);
-            for(int i = 0; i < len; i++) {
-                s += s[pos + i];
+            for(int j = 0; j < len; j++) {
+                s += s[pos + j];
             }
             i = data.find(')', i);
-        } else {
+        } else {    
             s += data[i];
         }
     }
